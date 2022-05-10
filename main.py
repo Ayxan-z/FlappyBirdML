@@ -3,8 +3,8 @@ import sys
 import pygame
 from pygame.locals import *
 import os
-from itertools import cycle
 import json
+import random
 
 __location__ = os.path.realpath(
     os.path.join(os.getcwd(), os.path.dirname(__file__)))
@@ -18,6 +18,7 @@ with open('data.json') as json_file:
 
 train = data['train']
 pipe_lens = data['pipe_lens']
+epoch_score = data['epoch_score']
 
 iter_pipe_lens = iter(pipe_lens)
 
@@ -33,11 +34,9 @@ sealevel_image = os.path.join(__location__, 'images/base.jfif')
 
 bird_flapped = False
 bird_flap_velocity = 0
-# data = [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]*9 + [1,1,1,1,1]
-
-iter_one_zero = cycle([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1])
+your_best_score = 0
 def flappygame():
-    global iter_pipe_lens, bird_flap_velocity, bird_flapped, train
+    global iter_pipe_lens, bird_flap_velocity, bird_flapped, train, epoch_score
     
 
     your_score = 0
@@ -83,10 +82,10 @@ def flappygame():
         for event in pygame.event.get():
             if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
                 with open('data.json', 'w') as f:
-                    json.dump({"train": train, 'pipe_lens': pipe_lens}, f)
+                    json.dump({"epoch_score": epoch_score, "train": train, 'pipe_lens': pipe_lens}, f)
                 pygame.quit()
                 sys.exit()
-            
+
             # if event.type == KEYDOWN and (event.key == K_SPACE or event.key == K_UP):
             #     if vertical > 0:
             #         bird_velocity_y = bird_flap_velocity
@@ -97,15 +96,16 @@ def flappygame():
                 bird_flapped = True
 
         except:
-            train.append(next(iter_one_zero))
+            train.append(random.choice([0, 1]))
 
         game_over = isGameOver(horizontal,
 							vertical,
 							up_pipes,
 							down_pipes)
         if game_over[0]:
+            epoch_score.append(your_score)
             y = game_over[1]
-            
+
             for i, v in enumerate(reversed(train)):
                 if y != v:
                     train[-1 if i == 0 else (i*-1)+-1] = y
@@ -122,6 +122,8 @@ def flappygame():
             pipeMidPos = pipe['x'] + game_images['pipeimage'][0].get_width()/2
             if pipeMidPos <= playerMidPos < pipeMidPos + 4:
                 your_score += 1
+                # if your_score > your_best_score: your_best_score = your_score
+
                 print(f"Your your_score is {your_score}")
 
         if bird_velocity_y < bird_Max_Vel_Y and not bird_flapped:
@@ -210,7 +212,7 @@ def createPipe():
 	
 	except:
 		with open('data.json', 'w') as f:
-			json.dump({"train": train, 'pipe_lens': pipe_lens}, f)
+			json.dump({"epoch_score": epoch_score, "train": train, 'pipe_lens': pipe_lens}, f)
 		print("^^^^^^^^^^^^^^^^^^^^\WIN/^^^^^^^^^^^^^^^^^^^^")
 		sys.exit()
 		# random.randrange(
@@ -279,7 +281,7 @@ if __name__ == '__main__':
 				if event.type == QUIT or (event.type == KEYDOWN and \
 										event.key == K_ESCAPE):
 					with open('data.json', 'w') as f:
-						json.dump({"train": train, 'pipe_lens': pipe_lens}, f)
+						json.dump({"epoch_score": epoch_score, "train": train, 'pipe_lens': pipe_lens}, f)
 					pygame.quit()
 					sys.exit()
 
@@ -300,5 +302,3 @@ if __name__ == '__main__':
 					framepersecond_clock.tick(framepersecond)
 
 				flappygame()
-
-			
